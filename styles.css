@@ -1,0 +1,21 @@
+.container {
+  display: flex;
+  width: 100%;
+}
+
+.tree-menu {
+  width: 30%;
+  padding: 10px;
+  border-right: 1px solid #ccc;
+}
+
+.editor {
+  width: 70%;
+  padding: 10px;
+}
+
+form input, form select {
+  display: block;
+  margin-bottom: 10px;
+  width: 100%;
+}

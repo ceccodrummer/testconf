@@ -1,0 +1,18 @@
+#object-list {
+    list-style-type: none;
+    padding: 0;
+}
+
+.object-item {
+    cursor: pointer;
+    padding: 5px;
+}
+
+.object-item.expanded > ul {
+    display: block;
+}
+
+.object-item > ul {
+    display: none; /* Nascondiamo i sotto-elenco di default */
+    padding-left: 15px; /* Spaziatura per il sotto-elenco */
+}

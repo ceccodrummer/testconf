@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interfaccia di Modifica JSON</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden; /* Impedisce lo scorrimento della pagina */
+        }
+        #sidebar {
+            width: 30%;
+            background-color: #f4f4f4;
+            border-right: 1px solid #ccc;
+            transition: width 0.3s;
+            overflow: auto;
+        }
+        #content {
+            flex-grow: 1;
+            padding: 20px;
+        }
+        #resizer {
+            width: 10px; /* Doppio della larghezza originale */
+            cursor: ew-resize;
+            background-color: #007bff;
+            height: 100%;
+            position: relative;
+            z-index: 1; /* Assicura che la barra sia sopra il contenuto */
+        }
+        .menu-item {
+            padding: 10px;
+            cursor: pointer;
+        }
+        .submenu {
+            display: none; /* Nasconde le sottomenu per default */
+            padding-left: 20px;
+        }
+        .expanded {
+            display: block; /* Mostra le sottomenu quando espanso */
+        }
+        .property-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px;
+            border-radius: 4px;
+            margin: 2px 0;
+        }
+        .valued {
+            background-color: #d1e7dd; /* Colore di sfondo azzurro */
+        }
+        .button {
+            border: none;
+            background: none;
+            cursor: pointer;
+            color: #007bff;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div id="sidebar">
+        <div id="menu">
+            <!-- Contenuto del menu a sinistra -->
+        </div>
+    </div>
+    <div id="resizer"></div>
+    <div id="content">
+        <!-- Contenuto principale -->
+        <h1>Modifica JSON</h1>
+        <p>Qui verrà visualizzato il contenuto del JSON e le opzioni di modifica.</p>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            let isResizing = false;
+
+            $('#resizer').on('mousedown', function (e) {
+                isResizing = true;
+            });
+
+            $(document).on('mousemove', function (e) {
+                if (isResizing) {
+                    const newWidth = e.clientX;
+                    if (newWidth > 100) { // Limita la larghezza minima
+                        $('#sidebar').css('width', newWidth + 'px');
+                    }
+                }
+            });
+
+            $(document).on('mouseup', function () {
+                isResizing = false;
+            });
+
+            // Gestisci il clic sulla barra per espandere/comprimere
+            $('#resizer').on('click', function () {
+                const $sidebar = $('#sidebar');
+                const isCollapsed = $sidebar.width() === 0;
+
+                if (isCollapsed) {
+                    $sidebar.css('width', '30%'); // Ripristina la larghezza
+                } else {
+                    $sidebar.css('width', '0'); // Comprime la sezione
+                }
+            });
+
+            // JSON dello schema
+            const schema = [
+                {
+                    "TypeName": "Group",
+                    "TypeKind": "ConcreteClass",
+                    "BaseTypes": [],
+                    "DerivedTypes": [],
+                    "EnumValues": [],
+                    "Interfaces": [],
+                    "IsRoot": true,
+                    "Properties": [
+                        {
+                            "PropertyName": "GroupName",
+                            "PropertyType": "String"
+                        },
+                        {
+                            "PropertyName": "Members",
+                            "PropertyType": "List<Person>"
+                        }
+                    ]
+                },
+                {
+                    "TypeName": "Person",
+                    "TypeKind": "ConcreteClass",
+                    "BaseTypes": [],
+                    "DerivedTypes": [
+                        "Employee",
+                        "Manager"
+                    ],
+                    "EnumValues": [],
+                    "Interfaces": [],
+                    "Properties": [
+                        {
+                            "PropertyName": "Name",
+                            "PropertyType": "String"
+                        },
+                        {
+                            "PropertyName": "Age",
+                            "PropertyType": "Int32"
+                        }
+                    ]
+                },
+                {
+                    "TypeName": "Employee",
+                    "TypeKind": "ConcreteClass",
+                    "BaseTypes": [
+                        "Person"
+                    ],
+                    "DerivedTypes": [],
+                    "EnumValues": [],
+                    "Interfaces": [],
+                    "Properties": [
+                        {
+                            "PropertyName": "Position",
+                            "PropertyType": "String"
+                        }
+                    ]
+                },
+                {
+                    "TypeName": "Manager",
+                    "TypeKind": "ConcreteClass",
+                    "BaseTypes": [
+                        "Employee",
+                        "Person"
+                    ],
+                    "DerivedTypes": [],
+                    "EnumValues": [],
+                    "Interfaces": [],
+                    "Properties": [
+                        {
+                            "PropertyName": "Position",
+                            "PropertyType": "String"
+                        },
+                        {
+                            "PropertyName": "NumberOfReports",
+                            "PropertyType": "Int32"
+                        }
+                    ]
+                }
+            ];
+
+            // JSON dei dati (esempio)
+            const data = {
+                "GroupName": "Company Team",
+                "Members": [
+                    {
+                        "$type": "Person",
+                        "Name": "Alice",
+                        "Age": 30
+                    },
+                    {
+                        "$type": "Employee",
+                        "Name": "Bob",
+                        "Age": 25,
+                        "Position": "Developer"
+                    },
+                    {
+                        "$type": "Manager",
+                        "Name": "Charlie",
+                        "Age": 35,
+                        "Position": "Team Lead",
+                        "NumberOfReports": 5
+                    }
+                ]
+            };
+
+            // Funzione per costruire il menu
+            function buildMenu() {
+                const rootTypes = schema.filter(type => type.IsRoot);
+                rootTypes.forEach(type => {
+                    const item = createMenuItem(type);
+                    $('#menu').append(item);
+                });
+            }
+
+            // Funzione per creare un elemento di menu
+            function createMenuItem(type) {
+                const item = $('<div class="menu-item"></div>').text(type.TypeName);
+                const submenu = $('<div class="submenu"></div>');
+
+                type.Properties.forEach(prop => {
+                    // Mostra solo le proprietà di tipo oggetto o liste di oggetti
+                    if (prop.PropertyType.startsWith("List<") || isComplexType(prop.PropertyType)) {
+                        const propItem = createPropertyItem(prop);
+                        submenu.append(propItem);
+                    }
+                });
+
+                if (submenu.children().length > 0) { // Aggiungi solo se ci sono proprietà da mostrare
+                    item.append(submenu);
+                    // Gestisci l'espansione e compressione del sottomenu
+                    item.on('click', function (e) {
+                        e.stopPropagation(); // Impedisce la chiusura del menu genitore
+                        submenu.toggleClass('expanded');
+                    });
+                }
+
+                return item;
+            }
+
+            // Funzione per creare un elemento di proprietà
+            function createPropertyItem(prop) {
+                const propItem = $('<div class="property-item"></div>').text(prop.PropertyName);
+                const propKey = prop.PropertyName.replace(/ /g, ''); // Rimuovi gli spazi per usare come chiave
+                const value = getValueFromData(propKey); // Ottieni il valore dall'oggetto data
+
+                if (value !== undefined) {
+                    propItem.addClass('valued'); // Aggiungi classe per lo sfondo
+                    const removeButton = $('<button class="button">X</button>').on('click', function (e) {
+                        e.stopPropagation(); // Impedisce la chiusura del menu genitore
+                        removeProperty(propKey);
+                    });
+                    propItem.append(removeButton);
+                } else {
+                    const addButton = $('<button class="button">+</button>').on('click', function (e) {
+                        e.stopPropagation(); // Impedisce la chiusura del menu genitore
+                        addProperty(propKey);
+                    });
+                    propItem.append(addButton);
+                }
+
+                return propItem;
+            }
+
+            // Funzione per ottenere il valore dall'oggetto data
+            function getValueFromData(propName) {
+                // Tratta le proprietà a più livelli
+                const keys = propName.split('.');
+                let currentValue = data;
+
+                for (const key of keys) {
+                    if (currentValue && currentValue.hasOwnProperty(key)) {
+                        currentValue = currentValue[key];
+                    } else {
+                        return undefined; // Proprietà non valorizzata
+                    }
+                }
+
+                return currentValue; // Restituisci il valore trovato
+            }
+
+            // Funzione per rimuovere una proprietà (da definire la logica)
+            function removeProperty(propKey) {
+                alert(`Rimuovere la proprietà: ${propKey}`);
+                // Aggiungi la logica per rimuovere la proprietà dall'oggetto data
+            }
+
+            // Funzione per aggiungere una proprietà (da definire la logica)
+            function addProperty(propKey) {
+                alert(`Aggiungere la proprietà: ${propKey}`);
+                // Aggiungi la logica per aggiungere la proprietà all'oggetto data
+            }
+
+            // Funzione per controllare se il tipo è complesso (da espandere in base ai tipi complessi reali)
+            function isComplexType(typeName) {
+                return schema.some(type => type.TypeName === typeName);
+            }
+
+            // Costruire il menu al caricamento
+            buildMenu();
+        });
+    </script>
+</body>
+</html>
